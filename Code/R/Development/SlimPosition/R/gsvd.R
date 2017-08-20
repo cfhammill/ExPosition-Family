@@ -152,3 +152,107 @@ gsvd <- function(DAT, LW=NaN, RW=NaN, nu= min(dim(DAT)), nv = min(dim(DAT)), k =
 
   return(list(fi = fi, fj = fj, p = p, q = q, u = res$u, v = res$v, d = d, d.orig = d.orig, tau = tau))
 }
+
+
+
+process_weights <- function(mat, tol, k){
+    if(is.null(mat))
+        return(list(type = "none"))
+
+    if(is.vector(mat))
+        return(list(type = "vec"
+                  , sqrt_m = sqrt(mat)
+                  , sqrt_inv = 1/sqrt(mat)))
+    
+    if(isDiagonal.matrix(mat))
+        return(list(type = "vec"
+                  , sqrt_m = sqrt(diag(mat))
+                  , sqrt_inv = 1/sqrt(diag(mat))))
+
+    return(setNames(c(list("mat")
+                    , matrix_powers(mat, c(1/2,-1/2), tol, min(dim(mat))))
+                  , c("type", "sqrt_m", "sqrt_inv")))
+                                                   
+}
+
+gsvd_new <-
+    function(DAT, LW=NULL, RW=NULL
+           , nu= min(dim(DAT)), nv = min(dim(DAT))
+           , k = NULL, tol=.Machine$double.eps){
+
+        DAT <- as.matrix(DAT)
+
+        if(!is.null(LW) && !is.null(RW) &&
+           is.matrix(LW) && is.matrix(RW) &&
+           !isDiagonal.matrix(LW) && !isDiagonal.matrix(RW)){
+
+            res <- gsvd_eig(DAT, LW, RW, tol, nv, k)
+
+            rownames(res$u) <- rownames(res$p) <- rownames(DAT)
+            rownames(res$v) <- rownames(res$q) <- colnames(DAT)
+
+            return(res)
+            
+        } else {
+            left_components <-
+                process_weights(LW, tol, min(dim(LW)))
+            
+            right_components <-
+                process_weights(RW, tol, min(dim(RW)))
+
+            DAT <-
+                with(left_components
+                     , switch(type
+                            , none = DAT
+                            , vec = matrix(sqrt_m,nrow=nrow(DAT),ncol=ncol(DAT),byrow=F) * DAT
+                            , mat = sqrt_m %*% DAT))
+
+            DAT <-
+                with(right_components
+                     , switch(type
+                            , none = DAT
+                            , vec =  DAT * matrix(sqrt_m,nrow=nrow(DAT),ncol=ncol(DAT),byrow=T)
+                            , mat = DAT %*% sqrt_m))
+
+
+            res <- tolerance_svd(DAT, tol, nu)
+            rownames(res$u) <- rownames(DAT)
+            rownames(res$v) <- colnames(DAT)
+
+
+            if(is.null(k)) k <- min(dim(dat))
+            d.orig <- res$d
+            tau <- d.orig^2/sum(d.orig^2)
+            comp.ret <- min(length(d.orig),k)
+
+            d <- d.orig[1:comp.ret]
+            ## this should protect against the rank 1 where it's just a vector.
+            res$u <- as.matrix(res$u[,1:comp.ret])
+            res$v <- as.matrix(res$v[,1:comp.ret])
+
+            if(left_components$type == "vec"){
+                p <- matrix(left_components$sqrt_inv,nrow=nrow(res$u),ncol=ncol(res$u),byrow=F) * res$u
+                fi <- matrix(LW,nrow=nrow(p),ncol=ncol(p),byrow=F) * p * matrix(d,nrow(p),ncol(p),byrow=T)
+            }else if(left_components$type == "mat"){
+                p <- left_components$sqrt_inv %*% res$u
+                fi <- LW %*% p * matrix(d,nrow(p),ncol(p),byrow=T)
+            }else{
+                p <- res$u
+                fi <- p * matrix(d,nrow(p),ncol(p),byrow=T)
+            }
+
+            if(right_components$type == "vec"){
+                q <- matrix(right_components$sqrt_inv,nrow=nrow(res$v),ncol=ncol(res$v),byrow=F) * res$v
+                fj <- matrix(RW,nrow=nrow(q),ncol=ncol(q),byrow=F) * q * matrix(d,nrow(q),ncol(q),byrow=T)
+            }else if(right_components$type == "matrix"){
+                q <- right_components$sqrt_inv %*% res$v
+                fj <- RW %*% q * matrix(d,nrow(q),ncol(q),byrow=T)
+            }else{
+                q <- res$v
+                fj <- q * matrix(d,nrow(q),ncol(q),byrow=T)
+            }
+
+            return(list(fi = fi, fj = fj, p = p, q = q
+                      , u = res$u, v = res$v, d = d, d.orig = d.orig, tau = tau))
+        }
+    } 
