@@ -90,6 +90,20 @@ Eigen::MatrixXd matrix_power(Eigen::MatrixXd m, double power, double tol, int k)
   return(matrix_power(svd, power, tol));
 }
 
+// [[Rcpp::export]]
+Rcpp::List matrix_powers(Eigen::MatrixXd m, std::vector<double> powers, double tol, int k){
+
+  // Compute the tolerance SVD
+  basic_svd svd = tolerance_svd_cpp(m, tol, k);
+  Rcpp::List res(powers.size());
+
+  for(int i = 0; i < powers.size(); ++i)
+    res(i) = matrix_power(svd, powers[i], tol);
+
+  return(res);
+}
+
+
 
 VectorXd vector_power(VectorXd v, double power, double tol, int k){
   int rank = 0;
