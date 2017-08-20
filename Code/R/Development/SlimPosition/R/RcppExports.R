@@ -9,6 +9,10 @@ matrix_power <- function(m, power, tol, k) {
     .Call('_SlimPosition_matrix_power', PACKAGE = 'SlimPosition', m, power, tol, k)
 }
 
+matrix_powers <- function(m, powers, tol, k) {
+    .Call('_SlimPosition_matrix_powers', PACKAGE = 'SlimPosition', m, powers, tol, k)
+}
+
 gsvd_eig <- function(data, left_weights, right_weights, tol, nv, k) {
     .Call('_SlimPosition_gsvd_eig', PACKAGE = 'SlimPosition', data, left_weights, right_weights, tol, nv, k)
 }

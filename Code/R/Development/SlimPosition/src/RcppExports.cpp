@@ -33,6 +33,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// matrix_powers
+Rcpp::List matrix_powers(Eigen::MatrixXd m, std::vector<double> powers, double tol, int k);
+RcppExport SEXP _SlimPosition_matrix_powers(SEXP mSEXP, SEXP powersSEXP, SEXP tolSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type m(mSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type powers(powersSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(matrix_powers(m, powers, tol, k));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gsvd_eig
 List gsvd_eig(Eigen::MatrixXd data, Eigen::MatrixXd left_weights, Eigen::MatrixXd right_weights, double tol, int nv, int k);
 RcppExport SEXP _SlimPosition_gsvd_eig(SEXP dataSEXP, SEXP left_weightsSEXP, SEXP right_weightsSEXP, SEXP tolSEXP, SEXP nvSEXP, SEXP kSEXP) {
@@ -53,6 +67,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_SlimPosition_tolerance_svd", (DL_FUNC) &_SlimPosition_tolerance_svd, 3},
     {"_SlimPosition_matrix_power", (DL_FUNC) &_SlimPosition_matrix_power, 4},
+    {"_SlimPosition_matrix_powers", (DL_FUNC) &_SlimPosition_matrix_powers, 4},
     {"_SlimPosition_gsvd_eig", (DL_FUNC) &_SlimPosition_gsvd_eig, 6},
     {NULL, NULL, 0}
 };
